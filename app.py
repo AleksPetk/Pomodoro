@@ -1,79 +1,148 @@
-import time
 from logic import Logic
+from ui_pages import HEADER, Main, CONTENT_COLOR, HEADER_COLOR, Set_T, Running
+import tkinter as tk
 
-"""
-POMODORO TIMER
-Work -> Break -> Work
-With clear phases and sound alerts.
-"""
+
 # Fast secs!
 
 class App:
     def __init__(self):
-        pass
+        self.root = tk.Tk()
+        self.root.geometry("600x600")
+        self.root.title("Pomodore")
+        self.root.resizable(False, False)
 
-    def timer_run(self, minutes: int, round, phrase):
-        total_sec = minutes * 60
-        for remaining in range(total_sec, -1, -1):
-            rem_h, rem_min, rem_sec = Logic.format_time(remaining)
-            print(f"\r{round}. {phrase} | {rem_h}H: {rem_min}M: {rem_sec}S", end="", flush=True)
-            time.sleep(0.0001)
-        print(" Finished")
+        self.sections = {}
+        self.sections["header"] = tk.Frame(self.root, height=100,width=600, bg=HEADER_COLOR)
+        self.sections["content"] = tk.Frame(self.root, height=500, width=600, bg=CONTENT_COLOR)
+        for section in self.sections.values():
+            section.pack()
+            section.propagate(False)
 
-    def menu(self):
-        menu_list = ["Set timer", "Exit"]
-        for e, opt in enumerate(menu_list, 1):
-            print(f"{e}. {opt}")
+        header = HEADER(self.sections["header"])
+        header.pack()
 
-        return len(menu_list)
+        self.content = {}
+        self.content["main"] = Main(self.sections["content"], self)
+        self.content["entry"] = Set_T(self.sections["content"], self)
+        self.content["run"] = Running(self.sections["content"], self)
 
-    def user_int(self, max_v):
-        while True:
-            try:
-                user_opt = int(input("Option: "))
-                if 1 <= user_opt <= max_v:
-                    return user_opt
-                else: 
-                    print("Not such a option!")
-            except ValueError:
-                print("Numbers only")
+        for page in self.content.values():
+            page.place(x=0, y=0)
 
-    def set_input(self, phrase):
-        while True:
-            try:
-                user_opt = int(input(f"{phrase}: "))
-                if 1 <= user_opt:
-                    return user_opt
-                else: 
-                    print("Can't be less than 1!")
-            except ValueError:
-                print("Numbers only")
+        self.show_page(self.content["main"])
 
-    def timer_set(self):
-        get_work = self.set_input("Work Time")
-        get_break = self.set_input("Break")
-        get_rounds = self.set_input("Rounds")
-        for round in range(1,get_rounds+1):
-            self.timer_run(get_work, round, "Work")
-            self.timer_run(get_break, round, "Break")
+    def selected(self, event = None):
+        self.work_min = self.content['entry'].entry_work.get()
+        self.break_min= self.content['entry'].entry_break.get()
+        self.rounds= self.content['entry'].entry_round.get()
+        if self.work_min.isdigit() and self.rounds.isdigit() and self.break_min.isdigit() :
+            self.content['entry'].label_about.config(text = 'Timer can be set!', bg = "lightgreen")
+            self.content['entry'].start_b.config(state = "normal")
+        else:
+            self.content['entry'].label_about.config(text = 'You need to set first', bg = CONTENT_COLOR)
+            self.content['entry'].start_b.config(state = "disabled")
 
 
+    def start_pressed(self):
+        self.content['entry'].start_b.config(state = "disabled")
+        self.content['entry'].entry_work.delete(0, tk.END)
+        self.content['entry'].entry_break.delete(0, tk.END)
+        self.content['entry'].entry_round.delete(0, tk.END)
+        self.content['entry'].label_about.config(text = 'Set Timer', bg = CONTENT_COLOR)
+        
+        work_min = int(self.work_min)
+        rounds = int(self.rounds)
+        break_min = int(self.break_min)
+        
+        self.show_page(self.content['run'])
 
+        self.timer_set(work_min, rounds, break_min)
 
-
-    def navigator(self,user_in):
-        match user_in:
-            case 1:
-                self.timer_set()
-            case 2:
-                exit()
-
-    def mainloop(self):
-        while True:
-            print("\nPomodoro Timer\n")
-            max_v = self.menu()
-            user_in = self.user_int(max_v)
-            self.navigator(user_in)
+    def show_page(self,page):
+        page.tkraise()
 
     def run(self):
-        self.mainloop()
+        self.root.mainloop()
+
+
+
+
+    def timer_set(self, work_min: int, rounds: int, break_min: int):
+        self.work_sec = work_min * 60
+        self.break_sec = break_min * 60
+        self.total_rounds = rounds
+
+        self.round_num = 1
+        self.phase = "Work"          
+        self.remaining = self.work_sec
+
+        self.running = True
+        self.pause = False
+        self.after_id = None
+
+        self._tick()
+
+    def _tick(self):
+        if not self.running or self.pause:
+            return
+        
+        rem_h, rem_min, rem_sec = Logic.format_time(self.remaining)
+        self.content['run'].timer.config(
+            text=f"{self.round_num}. {self.phase} | {rem_h}H: {rem_min}M: {rem_sec}S"
+        )
+
+        
+        if self.remaining <= 0:
+            self._next_phase_or_round()
+            return
+
+       
+        self.remaining -= 1
+        self.after_id = self.root.after(1, self._tick)
+
+    def _next_phase_or_round(self):
+        if self.phase == "Work":
+            self.phase = "Break"
+            self.remaining = self.break_sec
+        else:
+            if self.round_num >= self.total_rounds:
+                self.content['run'].timer.config(text="Finished ✅")
+                self.root.after(1500,lambda: self.show_page(self.content["entry"]))
+                self.running = False
+                self.after_id = None
+    
+                return
+
+            self.round_num += 1
+            self.phase = "Work"
+            self.remaining = self.work_sec
+        self.after_id = self.root.after(0, self._tick)
+
+    def stop(self):
+        self.running = False
+        self.pause = False
+        if self.after_id is not None:
+            self.root.after_cancel(self.after_id)
+            self.after_id = None
+            self.content['run'].timer.config(text="Stopped ⏹")
+            self.root.after(1500,lambda: self.show_page(self.content["entry"]) )
+            self.content["run"].pause_resume.config(text = "Pause")
+
+    def resume_pause(self):
+        if not self.pause:
+            self.content["run"].pause_resume.config(text = "Resume")
+            self.pause = True
+        elif self.pause:
+            self.content["run"].pause_resume.config(text = "Pause")
+            if not self.running:
+                return
+            if not self.pause:
+                return
+            self.pause = False
+            self.after_id = self.root.after(0, self._tick)
+
+    
+
+app = App()
+app.run()
