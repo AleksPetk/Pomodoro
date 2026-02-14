@@ -24,6 +24,7 @@ class Main(tk.Frame):
         frame.pack_propagate(False)
 
         tk.Button(frame, text="Set Timer", font=BUTTONS_FONT, command=lambda: controler.show_page(controler.content["entry"])).pack(pady=50)
+        tk.Button(frame, text="Show Logs", font=BUTTONS_FONT, command=controler.logs).pack(pady=50)
         tk.Button(frame, text="Exit", font=BUTTONS_FONT, command=controler.root.destroy).pack(pady=50)
 
 class Set_T(tk.Frame):
@@ -81,5 +82,17 @@ class Running(tk.Frame):
         self.pause_resume = tk.Button(frame, text="Pause", font=BUTTONS_FONT, command=controler.resume_pause)
         self.pause_resume.pack(pady=10)
 
-    
+
+class Logs_view(tk.Frame):
+    def __init__(self, parent, controler):
+        super().__init__(parent)
+        frame = tk.Frame(self,height=500, width=600, bg=CONTENT_COLOR )
+        frame.pack(fill="both")
+        frame.pack_propagate(False)
+
+        self.logs_list = tk.Listbox(frame, width=30, height=10, font=SMALL_LABELS, highlightthickness=3, highlightbackground="black")
+        self.logs_list.pack(pady=5)
+
+        tk.Button(frame, text="Back", font=BUTTONS_FONT, command=lambda: controler.show_page(controler.content['main'])).pack(pady=5)
+
 

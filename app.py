@@ -1,5 +1,5 @@
 from logic import Logic
-from ui_pages import HEADER, Main, CONTENT_COLOR, HEADER_COLOR, Set_T, Running
+from ui_pages import HEADER, Main, CONTENT_COLOR, HEADER_COLOR, Set_T, Running, Logs_view
 import tkinter as tk
 
 
@@ -26,11 +26,19 @@ class App:
         self.content["main"] = Main(self.sections["content"], self)
         self.content["entry"] = Set_T(self.sections["content"], self)
         self.content["run"] = Running(self.sections["content"], self)
+        self.content["logs"] = Logs_view(self.sections["content"], self)
 
         for page in self.content.values():
             page.place(x=0, y=0)
 
         self.show_page(self.content["main"])
+
+    def logs(self):
+        self.content['logs'].logs_list.delete(0, tk.END)
+        list_logs = Logic.logs_read()
+        for e, log in enumerate(list_logs, 1):
+            self.content['logs'].logs_list.insert(tk.END, f"{e}. {log}")
+        self.show_page(self.content['logs'])
 
     def selected(self, event = None):
         self.work_min = self.content['entry'].entry_work.get()
@@ -63,6 +71,7 @@ class App:
         page.tkraise()
 
     def run(self):
+        Logic.logs_save(" App opened ")
         self.root.mainloop()
 
 
@@ -142,7 +151,3 @@ class App:
             self.pause = False
             self.after_id = self.root.after(0, self._tick)
 
-    
-
-app = App()
-app.run()
