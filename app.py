@@ -125,7 +125,7 @@ class App:
 
        
         self.remaining -= 1
-        self.after_id = self.root.after(10, self._tick)
+        self.after_id = self.root.after(1000, self._tick)
 
     def _next_phase_or_round(self):
         if self.phase == "Work":

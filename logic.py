@@ -20,11 +20,14 @@ class Logic:
 
     def logs_read():
         list_lines = []
-        with open(LOG_FILE, "r", encoding="utf-8") as f:
-            for line in f:
-                if line:
-                    line.strip()
-                    list_lines.append(line)
+        try:
+            with open(LOG_FILE, "r", encoding="utf-8") as f:
+                for line in f:
+                    if line:
+                        line = line.strip()
+                        list_lines.append(line)
+        except FileNotFoundError:
+            list_lines.append("No logs yet!")
         return reversed(list_lines)
     
     def sql_onstart(work_min, break_min, rounds):
