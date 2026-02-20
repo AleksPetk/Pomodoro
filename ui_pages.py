@@ -23,9 +23,10 @@ class Main(tk.Frame):
         frame.pack(fill="both")
         frame.pack_propagate(False)
 
-        tk.Button(frame, text="Set Timer", font=BUTTONS_FONT, command=lambda: controler.show_page(controler.content["entry"])).pack(pady=50)
-        tk.Button(frame, text="Show Logs", font=BUTTONS_FONT, command=controler.logs).pack(pady=50)
-        tk.Button(frame, text="Exit", font=BUTTONS_FONT, command=controler.root.destroy).pack(pady=50)
+        tk.Button(frame, text="Set Timer", font=BUTTONS_FONT, command=lambda: controler.show_page(controler.content["entry"])).pack(pady=25)
+        tk.Button(frame, text="Show Logs", font=BUTTONS_FONT, command=controler.logs).pack(pady=25)
+        tk.Button(frame, text="Show History", font=BUTTONS_FONT, command=controler.history_sql).pack(pady=25)
+        tk.Button(frame, text="Exit", font=BUTTONS_FONT, command=controler.close_app).pack(pady=25)
 
 class Set_T(tk.Frame):
     def __init__(self, parent, controler):
@@ -96,3 +97,14 @@ class Logs_view(tk.Frame):
         tk.Button(frame, text="Back", font=BUTTONS_FONT, command=lambda: controler.show_page(controler.content['main'])).pack(pady=5)
 
 
+class History(tk.Frame):
+    def __init__(self, parent, controler):
+        super().__init__(parent)
+        frame = tk.Frame(self,height=500, width=600, bg=CONTENT_COLOR )
+        frame.pack(fill="both")
+        frame.pack_propagate(False)
+
+        self.sql_list = tk.Listbox(frame, width=30, height=10, font=SMALL_LABELS, highlightthickness=3, highlightbackground="black")
+        self.sql_list.pack(pady=5)
+
+        tk.Button(frame, text="Back", font=BUTTONS_FONT, command=lambda: controler.show_page(controler.content['main'])).pack(pady=5)

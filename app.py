@@ -1,5 +1,5 @@
 from logic import Logic
-from ui_pages import HEADER, Main, CONTENT_COLOR, HEADER_COLOR, Set_T, Running, Logs_view
+from ui_pages import HEADER, Main, CONTENT_COLOR, HEADER_COLOR, Set_T, Running, Logs_view, History
 import tkinter as tk
 
 
@@ -27,11 +27,13 @@ class App:
         self.content["entry"] = Set_T(self.sections["content"], self)
         self.content["run"] = Running(self.sections["content"], self)
         self.content["logs"] = Logs_view(self.sections["content"], self)
+        self.content['sql_view'] = History(self.sections["content"], self)
 
         for page in self.content.values():
             page.place(x=0, y=0)
 
         self.show_page(self.content["main"])
+
 
     def logs(self):
         self.content['logs'].logs_list.delete(0, tk.END)
@@ -39,6 +41,16 @@ class App:
         for e, log in enumerate(list_logs, 1):
             self.content['logs'].logs_list.insert(tk.END, f"{e}. {log}")
         self.show_page(self.content['logs'])
+
+    def history_sql(self):
+        self.content['sql_view'].sql_list.delete(0, tk.END)
+        list_history = Logic.view_sql()
+        for e, sq in enumerate(list_history, 1):
+            self.content['sql_view'].sql_list.insert(tk.END, f"{e}. {sq[0]}")
+            self.content['sql_view'].sql_list.insert(tk.END, f"     {sq[1]}")
+            self.content['sql_view'].sql_list.insert(tk.END, f"     {sq[2]}")
+            self.content['sql_view'].sql_list.insert(tk.END, f"------------------------------------------------")
+        self.show_page(self.content['sql_view'])
 
     def selected(self, event = None):
         self.work_min = self.content['entry'].entry_work.get()
@@ -62,6 +74,7 @@ class App:
         work_min = int(self.work_min)
         rounds = int(self.rounds)
         break_min = int(self.break_min)
+        self.start_now = Logic.sql_onstart(work_min, break_min, rounds)
         
         self.show_page(self.content['run'])
 
@@ -71,9 +84,13 @@ class App:
         page.tkraise()
 
     def run(self):
+        Logic.sql_ensuref()
         Logic.logs_save(" App opened ")
         self.root.mainloop()
 
+    def close_app(self):
+        Logic.close_sql()
+        self.root.destroy()
 
 
 
@@ -108,7 +125,7 @@ class App:
 
        
         self.remaining -= 1
-        self.after_id = self.root.after(1, self._tick)
+        self.after_id = self.root.after(10, self._tick)
 
     def _next_phase_or_round(self):
         if self.phase == "Work":
@@ -116,6 +133,7 @@ class App:
             self.remaining = self.break_sec
         else:
             if self.round_num >= self.total_rounds:
+                Logic.update_rounds(self.start_now)
                 self.content['run'].timer.config(text="Finished ✅")
                 self.root.after(1500,lambda: self.show_page(self.content["entry"]))
                 self.running = False
@@ -124,6 +142,7 @@ class App:
                 return
 
             self.round_num += 1
+            Logic.update_rounds(self.start_now)
             self.phase = "Work"
             self.remaining = self.work_sec
         self.after_id = self.root.after(0, self._tick)
